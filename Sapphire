@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>One in a Colosseum · the HR dive</title>
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg1:#06101f;--bg2:#02060d;--fg:#e8f1ff;--mut:#8aa4c8;--acc:#4fd1c5;--gold:#ffd166;--card:#0d1b33;--line:#1c3358}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100%;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;color:var(--fg);background:linear-gradient(180deg,var(--bg1),var(--bg2));display:flex;justify-content:center}
+main{width:100%;max-width:480px;padding:28px 20px 40px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:.5px}
+.sub{color:var(--mut);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:16px}
+.depth{display:flex;justify-content:space-between;color:var(--mut);font-size:14px;margin-bottom:10px}
+.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin-bottom:18px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--gold));transition:width .6s}
+.q{font-size:20px;line-height:1.35;margin:0 0 14px}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:#081327;color:var(--fg);font-size:17px}
+input:focus{outline:2px solid var(--acc)}
+button,.btn{display:inline-block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;background:var(--acc);color:#04201d;font-size:17px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none}
+.btn.gold{background:var(--gold);color:#2b2000}
+.ghost{background:transparent;color:var(--mut);border:1px solid var(--line)}
+.tier{font-size:24px;font-weight:700;margin:6px 0}
+.pts{color:var(--gold);font-weight:700}
+.note{color:var(--mut);font-size:15px;line-height:1.45}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>One in a Colosseum</h1>
+<p class="sub">Three prompts. Rare answers sink you deeper.</p>
+
+<section id="play" class="card">
+  <div class="depth"><span id="step">Prompt 1 of 3</span><span id="dp">0 m</span></div>
+  <div class="bar"><i id="fill"></i></div>
+  <p class="q" id="q"></p>
+  <input id="a" type="text" autocomplete="off" autocapitalize="words" placeholder="Type your answer">
+  <button id="go">Dive</button>
+</section>
+
+<section id="fb" class="card hide">
+  <div class="note" id="what"></div>
+  <div class="tier" id="tier"></div>
+  <div><span class="pts" id="gain"></span></div>
+  <p class="note" id="why"></p>
+  <button id="next">Next</button>
+</section>
+
+<section id="end" class="card hide">
+  <div class="note">You reached</div>
+  <div class="tier" id="final"></div>
+  <p class="note" id="fnote"></p>
+  <p class="note">The 11th National HR Colosseum by SAPPHIRE, XLRI. <b>The Ultimate Battle: HR Arena.</b><br>Prelims 24 Nov · Finals 26 Nov 2026 · Prizes worth ₹50,000</p>
+  <a class="btn gold" id="reg" href="https://unstop.com/competitions/national-hr-colosseum-110-xavier-school-of-management-xlri-1790046" target="_blank" rel="noopener">Register now</a>
+  <button class="ghost" id="again">Play again</button>
+</section>
+</main>
+
+<script>
+(function(){
+var norm=function(s){return s.toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim()};
+var has=function(t,arr){for(var i=0;i<arr.length;i++){if(t.indexOf(arr[i])>-1)return true}return false};
+var P=[
+ {q:"Name a B-school in India.",
+  best:function(t){return has(t,["xlri","xavier labour","xavier school of management","xavier institute"])},
+  common:["iim","isb","fms","mdi","spjimr","jbims","nmims","symbiosis","sibm","xime","ximb","iift","tapmi"],
+  topWhy:"XLRI is the rarest, deepest answer. Exactly where you belong.",
+  midWhy:"A solid pick, but plenty of people said it. Try the school in Jamshedpur next time.",
+  comWhy:"Very common answer. Barely made a ripple."},
+ {q:"Name a committee at XLRI.",
+  best:function(t){return has(t,["sapphire"])},
+  common:["placement","cultural","sports","admission","alumni","xcite","finance","marketing","consult","tech","media","social"],
+  topWhy:"SAPPHIRE is the deepest answer here. The HR committee that hosts the big stage.",
+  midWhy:"A real committee, but not the one with the best marks.",
+  comWhy:"A popular answer. It stays near the surface."},
+ {q:"Name the event hosted by SAPPHIRE.",
+  best:function(t){return has(t,["colosseum","coliseum"])},
+  common:["hr summit","conclave","quiz","case"],
+  topWhy:"The National HR Colosseum. One in a Colosseum.",
+  midWhy:"Not quite. The real answer lives in an arena.",
+  comWhy:"Too generic. Barely made a ripple."}
+];
+var tiers=[[0,"Shallows"],[250,"Reef"],[500,"Twilight Zone"],[800,"Midnight Zone"],[1000,"One in a Colosseum"]];
+var tierOf=function(d){var r=tiers[0][1];for(var i=0;i<tiers.length;i++){if(d>=tiers[i][0])r=tiers[i][1]}return r};
+var $=function(id){return document.getElementById(id)};
+var i=0,total=0,last=0;
+function show(id){["play","fb","end"].forEach(function(x){$(x).classList.toggle("hide",x!==id)})}
+function load(){
+  $("step").textContent="Prompt "+(i+1)+" of 3";
+  $("dp").textContent=total+" m";
+  $("fill").style.width=(total/3000*100)+"%";
+  $("q").textContent=P[i].q;
+  $("a").value="";
+  show("play");
+  $("a").focus();
+}
+function score(){
+  var raw=$("a").value;var t=norm(raw);
+  if(!t){$("a").focus();return}
+  var p=P[i],d,why;
+  if(p.best(t)){d=1000;why=p.topWhy}
+  else if(has(t,p.common)){d=80;why=p.comWhy}
+  else{d=350;why=p.midWhy}
+  total+=d;
+  $("what").textContent="You said: "+raw.trim();
+  $("tier").textContent=tierOf(d);
+  $("gain").textContent="+"+d+" m deeper";
+  $("why").textContent=why;
+  $("next").textContent=i===2?"See where you landed":"Next prompt";
+  $("dp").textContent=total+" m";
+  $("fill").style.width=(total/3000*100)+"%";
+  show("fb");
+}
+$("go").onclick=score;
+$("a").addEventListener("keydown",function(e){if(e.key==="Enter")score()});
+$("next").onclick=function(){
+  if(i<2){i++;load()}
+  else{
+    var avg=total/3;
+    $("final").textContent=tierOf(avg);
+    $("fnote").textContent="Total depth: "+total+" of 3000 m."+(total===3000?" Perfect dive: XLRI, SAPPHIRE, Colosseum.":" Max depth is XLRI, SAPPHIRE, Colosseum.");
+    show("end");
+  }
+};
+$("again").onclick=function(){i=0;total=0;load()};
+load();
+})();
+</script>
+</body>
+</html>
